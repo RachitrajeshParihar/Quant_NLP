@@ -5,7 +5,7 @@ Project Overview:
 This project involves financial sentiment analysis using tweets. The goal is to process financial text data, extract meaningful features using BERT embeddings, and classify sentiment using an MLP-Mixer model. The pipeline includes data scraping, preprocessing, model training, and evaluation to achieve high accuracy in sentiment classification.
 
 Project Structure:
--Data Scraping: Extracts financial tweets and sentiment labels.\n
+-Data Scraping: Extracts financial tweets and sentiment labels.
 
 -Preprocessing: Converts text into numerical representations using BERT embeddings.
 
