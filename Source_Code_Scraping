@@ -1,0 +1,54 @@
+import re
+import time
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+from datasets import load_dataset
+from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
+
+def get_tweet_content(url):
+    """
+    Fetches full tweet content from the provided URL by extracting meta tag information.
+    Returns the tweet text if available, otherwise returns None.
+    """
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            meta_tag = soup.find('meta', {'property': 'og:description'})
+            return meta_tag['content'] if meta_tag else None
+    except requests.RequestException:
+        return None
+    return None
+
+def clean_tweet(tweet):
+    """
+    Cleans tweet text by removing URLs and special characters.
+    Keeps only alphanumeric characters and spaces.
+    """
+    tweet = re.sub(r'https?://\S+', '', tweet)  # Remove URLs
+    tweet = re.sub(r'[^A-Za-z0-9\s$]', '', tweet)  # Remove special characters except "$"
+    return tweet.strip()
+
+def process_row(row):
+    """
+    Fetches the full tweet content if available; otherwise, cleans the existing tweet text.
+    Returns a dictionary containing the cleaned tweet and sentiment label.
+    """
+    full_tweet = get_tweet_content(row['url']) or clean_tweet(row['tweet'])
+    return {'tweet': full_tweet, 'sentiment': row['sentiment']}
+
+# Load financial sentiment dataset
+dataset = load_dataset("TimKoornstra/financial-tweets-sentiment")['train']
+
+# Process tweets using multiprocessing for faster execution
+with Pool(cpu_count()) as pool:
+    data = list(tqdm(pool.imap(process_row, dataset), total=len(dataset), desc="Scraping"))
+
+# Convert processed data into a DataFrame and save it as a CSV file
+df = pd.DataFrame(data)
+df.to_csv("sentiment001.csv", index=False)
+
+print("Dataset saved as sentiment001.csv")
